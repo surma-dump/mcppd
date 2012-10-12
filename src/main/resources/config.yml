@@ -1,0 +1,9 @@
+format: "json"
+
+# Push to Amazon S3
+s3:
+	- access_key_id:
+	- secret_key:
+	- object_name:
+	# This is the URL if the bucket were accessible as a website
+	- bucket_url:
