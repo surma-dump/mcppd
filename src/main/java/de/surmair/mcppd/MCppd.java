@@ -1,7 +1,6 @@
 package de.surmair.mcppd;
 
-import java.io.ByteArrayOutputStream;
-import java.io.ByteArrayInputStream;
+import java.io.StringBufferInputStream;
 
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.entity.Player;
@@ -10,15 +9,30 @@ import org.bukkit.Location;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.AmazonClientException;
+import com.amazonaws.AmazonServiceException;
 
 import com.google.gson.Gson;
 
 public class MCppd extends JavaPlugin {
 	private int writerTaskID;
+	private String access_key_id;
+	private String secret_key;
+	private String bucket;
+	private String object_name;
 
 	@Override
 	public void onEnable(){
-		writerTaskID = this.getServer().getScheduler().scheduleAsyncRepeatingTask(this, new PosLogThread(this), 60L, 200L);
+		// Create default configuration file, if there's none
+		this.saveDefaultConfig();
+
+		access_key_id = this.getConfig().getString("s3.access_key_id");
+		secret_key = this.getConfig().getString("s3.secret_key");
+		bucket = this.getConfig().getString("s3.bucket");
+		object_name = this.getConfig().getString("s3.object_name");
+		System.out.printf("%s %s %s %s", access_key_id, secret_key, bucket, object_name);
+
+		writerTaskID = this.getServer().getScheduler().scheduleAsyncRepeatingTask(this, new PosLogThread(this), 60L, this.getConfig().getLong("interval")*20L);
 	}
 
 	@Override
@@ -58,15 +72,17 @@ public class MCppd extends JavaPlugin {
 			for(int i = 0; i < players.length; i++) {
 				entries[i] = new Entry(players[i]);
 			}
-
 			Gson gson = new Gson();
 			String json = gson.toJson(entries);
-			System.out.println(json);
-			// String keyid = parent.getConfig().getString("s3.access_key_id");
-			// String key = parent.getConfig().getString("s3.secret_key");
-			// AWSCredential awscred = new BasicAWSCredentials(keyid, key);
-			// AmazonS3Client as3c = new AmazonS3Client(awscred);
-			// String bucket = parent.getConfig().getString("s3.bucket_url");
+
+
+			AWSCredentials awscred = new BasicAWSCredentials(access_key_id, secret_key);
+			AmazonS3Client as3c = new AmazonS3Client(awscred);
+			try {
+				as3c.putObject(bucket, object_name, new StringBufferInputStream(json), new com.amazonaws.services.s3.model.ObjectMetadata());
+			} catch(AmazonClientException ae) {
+				this.parent.getLogger().severe("Uploading failed: " + ae.getMessage());
+			}
 		}
 	}
 }

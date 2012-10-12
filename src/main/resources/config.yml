@@ -1,9 +1,12 @@
+# Ignored
 format: "json"
+
+# Push interval in seconds
+interval: 60
 
 # Push to Amazon S3
 s3:
-	- access_key_id:
-	- secret_key:
-	- object_name:
-	# This is the URL if the bucket were accessible as a website
-	- bucket_url:
+ - access_key_id:
+ - secret_key:
+ - object_name:
+ - bucket:
